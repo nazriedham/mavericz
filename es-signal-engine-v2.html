@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ES Signal Engine v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo+Black&family=Archivo:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #040608;
+  --bg2:      #070a0f;
+  --bg3:      #0a0f16;
+  --panel:    #0c1320;
+  --border:   #111e2e;
+  --border2:  #1a3050;
+  --cyan:     #00d4ff;
+  --green:    #00ff9d;
+  --red:      #ff2d55;
+  --amber:    #ffb300;
+  --purple:   #b388ff;
+  --dim:      #2a4a6a;
+  --muted:    #4a7a9a;
+  --text:     #7aaabb;
+  --bright:   #c8e8f8;
+  --white:    #eef8ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+
+body {
+  background:var(--bg);
+  font-family:'Archivo',sans-serif;
+  color:var(--text);
+  display:flex; flex-direction:column;
+}
+
+/* grid bg */
+body::before {
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.015) 1px,transparent 1px);
+  background-size:50px 50px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height:52px;flex-shrink:0;
+  background:rgba(4,6,8,0.98);
+  border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;z-index:100;position:relative;
+}
+.logo {
+  font-family:'Archivo Black',sans-serif;
+  font-size:17px;letter-spacing:4px;
+  color:var(--cyan);
+  text-shadow:0 0 20px rgba(0,212,255,0.5);
+}
+.logo b { color:var(--green); font-weight:900; }
+.top-status { display:flex;gap:20px;align-items:center; }
+.top-item { text-align:center; }
+.top-lbl { font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--dim); }
+.top-val { font-family:'Space Mono',monospace;font-size:13px;color:var(--bright); }
+.top-val.g{color:var(--green)}.top-val.r{color:var(--red)}.top-val.c{color:var(--cyan)}
+#clock-display{font-family:'Space Mono',monospace;font-size:19px;color:var(--cyan);text-shadow:0 0 15px rgba(0,212,255,0.4);}
+.sess-badge{
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;
+  padding:2px 8px;border-radius:10px;margin-top:2px;text-align:center;
+  border:1px solid var(--green);color:var(--green);background:rgba(0,255,157,0.08);
+}
+.sess-badge.off{border-color:var(--red);color:var(--red);background:rgba(255,45,85,0.08);}
+
+/* ── MAIN 3-COLUMN ── */
+.main {
+  flex:1;display:grid;
+  grid-template-columns:300px 1fr 360px;
+  overflow:hidden;position:relative;z-index:1;
+}
+
+/* ── COL 1: USER INPUTS ── */
+.col-inputs {
+  border-right:1px solid var(--border2);
+  background:var(--bg2);
+  overflow-y:auto;display:flex;flex-direction:column;
+}
+.col-inputs::-webkit-scrollbar{width:3px;}
+.col-inputs::-webkit-scrollbar-thumb{background:var(--border2);}
+
+.input-section{padding:14px 16px;border-bottom:1px solid var(--border);}
+.sec-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
+}
+.sec-num{
+  font-family:'Space Mono',monospace;font-size:9px;
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border2);color:var(--muted);flex-shrink:0;
+}
+.sec-num.auto{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,0.08);}
+.sec-num.manual{border-color:var(--amber);color:var(--amber);background:rgba(255,179,0,0.08);}
+.sec-title{
+  font-family:'Archivo Black',sans-serif;font-size:11px;
+  letter-spacing:2px;color:var(--bright);
+}
+.auto-badge{
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;
+  padding:2px 6px;border-radius:2px;
+  background:rgba(0,212,255,0.1);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);
+  margin-left:auto;
+}
+.manual-badge{
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;
+  padding:2px 6px;border-radius:2px;
+  background:rgba(255,179,0,0.1);color:var(--amber);border:1px solid rgba(255,179,0,0.3);
+  margin-left:auto;
+}
+
+/* auto-fill display */
+.auto-field{
+  background:var(--bg3);border:1px solid var(--border);border-radius:3px;
+  padding:8px 10px;margin-bottom:7px;position:relative;
+}
+.auto-field.filled{border-color:rgba(0,212,255,0.3);}
+.auto-field-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:3px;}
+.auto-field-val{font-family:'Space Mono',monospace;font-size:12px;color:var(--bright);min-height:16px;}
+.auto-field-val.loading{color:var(--dim);font-style:italic;}
+.auto-field-val.ready{color:var(--cyan);}
+.auto-icon{position:absolute;top:8px;right:8px;font-size:10px;color:var(--dim);}
+.auto-icon.done{color:var(--green);}
+
+/* manual inputs */
+.field{margin-bottom:8px;}
+.field label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);display:block;margin-bottom:3px;}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  color:var(--bright);padding:7px 10px;border-radius:3px;
+  font-family:'Space Mono',monospace;font-size:12px;outline:none;
+  transition:border-color 0.2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);}
+.field select option{background:var(--bg3);}
+.field textarea{resize:none;height:52px;font-size:11px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+
+/* mood */
+.mood-slider input[type=range]{
+  -webkit-appearance:none;width:100%;height:3px;
+  background:linear-gradient(90deg,var(--red),var(--amber),var(--green));
+  border:none;padding:0;cursor:pointer;border-radius:2px;
+}
+.mood-slider input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--white);border:2px solid var(--cyan);cursor:pointer;
+}
+.mood-labels{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);margin-top:3px;}
+
+/* analyze btn */
+.analyze-btn{
+  margin:12px 16px 8px;
+  padding:12px;width:calc(100% - 32px);
+  background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,255,157,0.1));
+  border:1px solid var(--cyan);color:var(--cyan);
+  font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:4px;
+  cursor:pointer;border-radius:3px;transition:all 0.2s;
+  text-shadow:0 0 15px rgba(0,212,255,0.4);
+  box-shadow:0 0 20px rgba(0,212,255,0.15);
+}
+.analyze-btn:hover{box-shadow:0 0 35px rgba(0,212,255,0.35);background:linear-gradient(135deg,rgba(0,212,255,0.25),rgba(0,255,157,0.15));}
+.analyze-btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+.gen-btn{
+  margin:8px 16px 16px;
+  padding:14px;width:calc(100% - 32px);
+  background:linear-gradient(135deg,rgba(0,255,157,0.2),rgba(0,212,255,0.12));
+  border:1px solid var(--green);color:var(--green);
+  font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:5px;
+  cursor:pointer;border-radius:3px;transition:all 0.2s;
+  text-shadow:0 0 15px rgba(0,255,157,0.5);
+  box-shadow:0 0 20px rgba(0,255,157,0.15);
+}
+.gen-btn:hover{box-shadow:0 0 40px rgba(0,255,157,0.4);}
+.gen-btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* ── COL 2: SIGNAL OUTPUT ── */
+.col-signal{
+  overflow-y:auto;background:var(--bg);display:flex;flex-direction:column;
+}
+.col-signal::-webkit-scrollbar{width:3px;}
+.col-signal::-webkit-scrollbar-thumb{background:var(--border2);}
+
+.idle-wrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;opacity:0.25;
+}
+.idle-wrap .big{font-family:'Archivo Black',sans-serif;font-size:32px;letter-spacing:6px;color:var(--cyan);}
+.idle-wrap .sub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center;line-height:2;}
+
+.signal-body{padding:16px;display:flex;flex-direction:column;gap:12px;}
+
+/* banner */
+.sig-banner{
+  border-radius:4px;padding:20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;overflow:hidden;
+}
+.sig-banner::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,0.01) 30px,rgba(255,255,255,0.01) 31px);
+}
+.sig-banner.long{background:linear-gradient(135deg,rgba(0,255,157,0.1),rgba(0,212,255,0.07));border:1px solid rgba(0,255,157,0.5);}
+.sig-banner.short{background:linear-gradient(135deg,rgba(255,45,85,0.1),rgba(255,179,0,0.05));border:1px solid rgba(255,45,85,0.5);}
+.sig-banner.nogo{background:linear-gradient(135deg,rgba(255,179,0,0.08),rgba(255,45,85,0.05));border:1px solid rgba(255,179,0,0.5);}
+.sig-dir{font-family:'Archivo Black',sans-serif;font-size:56px;letter-spacing:3px;line-height:1;}
+.sig-banner.long .sig-dir{color:var(--green);text-shadow:0 0 30px rgba(0,255,157,0.5);}
+.sig-banner.short .sig-dir{color:var(--red);text-shadow:0 0 30px rgba(255,45,85,0.5);}
+.sig-banner.nogo .sig-dir{color:var(--amber);}
+.sig-setup{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px;}
+.sig-ts{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px;}
+
+/* conf gauge */
+.conf-gauge{text-align:center;position:relative;}
+.gauge-ring{transform:rotate(-90deg);}
+.g-track{fill:none;stroke:var(--border2);stroke-width:5;}
+.g-fill{fill:none;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);}
+.g-fill.hi{stroke:var(--green);}
+.g-fill.md{stroke:var(--amber);}
+.g-fill.lo{stroke:var(--red);}
+.gauge-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.gauge-pct{font-family:'Archivo Black',sans-serif;font-size:24px;}
+.gauge-lbl{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:2px;color:var(--dim);}
+
+/* level cards */
+.levels-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;}
+.lc{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:10px;text-align:center;}
+.lc.entry{border-color:rgba(0,212,255,0.5);}
+.lc.sl{border-color:rgba(255,45,85,0.4);}
+.lc.t1{border-color:rgba(0,255,157,0.25);}
+.lc.t2{border-color:rgba(0,255,157,0.45);}
+.lc.t3{border-color:rgba(0,255,157,0.65);}
+.lc-l{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:5px;}
+.lc-v{font-family:'Space Mono',monospace;font-size:15px;color:var(--bright);}
+.lc-s{font-family:'Space Mono',monospace;font-size:9px;margin-top:3px;}
+.lc.entry .lc-v{color:var(--cyan);}
+.lc.sl .lc-v{color:var(--red);}
+.lc.t1 .lc-v,.lc.t2 .lc-v,.lc.t3 .lc-v{color:var(--green);}
+
+/* info grid */
+.info-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ibox{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:14px;}
+.ibox-title{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--cyan);margin-bottom:10px;}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);}
+.irow:last-child{border:none;}
+.ik{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);}
+.iv{font-family:'Space Mono',monospace;font-size:11px;color:var(--bright);}
+.iv.g{color:var(--green)}.iv.r{color:var(--red)}.iv.a{color:var(--amber)}.iv.c{color:var(--cyan)}
+
+/* reason box */
+.reason-box{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:14px;}
+.reason-text{font-size:13px;line-height:1.75;color:var(--text);}
+.reason-text strong{color:var(--bright);font-weight:600;}
+
+/* steps */
+.steps{display:flex;flex-direction:column;gap:5px;}
+.step{display:flex;gap:8px;align-items:flex-start;padding:8px;background:var(--bg3);border-radius:3px;border-left:2px solid var(--cyan);}
+.sn{font-family:'Archivo Black',sans-serif;font-size:14px;color:var(--cyan);min-width:18px;}
+.st{font-size:12px;line-height:1.5;color:var(--text);}
+
+/* inval */
+.inval{background:rgba(255,45,85,0.05);border:1px solid rgba(255,45,85,0.2);border-radius:3px;padding:12px;}
+.inval .ibox-title{color:var(--red);}
+.inval ul{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.inval ul li{font-family:'Space Mono',monospace;font-size:10px;padding-left:14px;position:relative;color:var(--text);}
+.inval ul li::before{content:'⚠';position:absolute;left:0;font-size:9px;color:var(--amber);}
+
+/* mindset alert */
+.mind-alert{border-radius:3px;padding:12px 14px;border-left:3px solid var(--amber);}
+.mind-alert.danger{border-left-color:var(--red);background:rgba(255,45,85,0.06);}
+.mind-alert.good{border-left-color:var(--green);background:rgba(0,255,157,0.05);}
+.mind-alert.warn{border-left-color:var(--amber);background:rgba(255,179,0,0.06);}
+.mind-alert-title{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--amber);margin-bottom:6px;}
+.mind-alert.danger .mind-alert-title{color:var(--red);}
+.mind-alert.good .mind-alert-title{color:var(--green);}
+.mind-alert-text{font-size:13px;line-height:1.6;color:var(--text);}
+
+/* loading */
+.scan-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.scan-ring{width:64px;height:64px;border:2px solid var(--border2);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.scan-txt{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--cyan);}
+.scan-log{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);text-align:center;line-height:2.2;}
+
+/* ── COL 3: COMPANION ANALYSIS PANEL ── */
+.col-companion{
+  border-left:1px solid var(--border2);
+  background:var(--bg2);overflow-y:auto;display:flex;flex-direction:column;
+}
+.col-companion::-webkit-scrollbar{width:3px;}
+.col-companion::-webkit-scrollbar-thumb{background:var(--border2);}
+
+.companion-header{
+  padding:14px 16px;border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;gap:8px;
+}
+.companion-title{font-family:'Archivo Black',sans-serif;font-size:11px;letter-spacing:3px;color:var(--cyan);}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;margin-left:auto;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.comp-section{padding:12px 16px;border-bottom:1px solid var(--border);}
+.comp-sec-title{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.comp-sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.comp-status{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 10px;border-radius:3px;margin-bottom:6px;
+  background:var(--bg3);border:1px solid var(--border);font-size:12px;
+}
+.comp-status.ok{border-color:rgba(0,255,157,0.3);}
+.comp-status.warn{border-color:rgba(255,179,0,0.3);}
+.comp-status.bad{border-color:rgba(255,45,85,0.3);}
+.cs-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ok .cs-dot{background:var(--green);}
+.warn .cs-dot{background:var(--amber);}
+.bad .cs-dot{background:var(--red);}
+.cs-text{font-family:'Space Mono',monospace;font-size:10px;color:var(--text);flex:1;}
+
+.comp-data{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:10px;margin-bottom:6px;}
+.cd-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;}
+.cd-value{font-family:'Space Mono',monospace;font-size:11px;color:var(--cyan);}
+.cd-value.dim{color:var(--muted);font-style:italic;font-size:10px;}
+
+.comp-idle{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;opacity:0.3;padding:20px;
+}
+.comp-idle-icon{font-size:36px;}
+.comp-idle-text{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center;line-height:2;}
+
+/* history bar */
+.hist-bar{
+  padding:8px 16px;border-top:1px solid var(--border);
+  background:var(--bg2);display:flex;gap:5px;flex-wrap:wrap;align-items:center;
+  font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:2px;
+}
+.hc{
+  padding:3px 9px;border-radius:2px;border:1px solid var(--border);
+  color:var(--dim);cursor:pointer;font-size:9px;transition:all 0.15s;
+}
+.hc:hover{border-color:var(--cyan);color:var(--cyan);}
+.hc.L{border-color:rgba(0,255,157,0.3);color:var(--green);}
+.hc.S{border-color:rgba(255,45,85,0.3);color:var(--red);}
+.hc.N{border-color:rgba(255,179,0,0.3);color:var(--amber);}
+
+/* ── INSTRUMENT SELECTOR ── */
+.inst-bar{
+  display:flex;align-items:center;gap:0;
+  background:var(--bg2);border-bottom:1px solid var(--b2);
+  padding:0 20px;overflow-x:auto;flex-shrink:0;
+}
+.inst-bar::-webkit-scrollbar{display:none;}
+.inst-btn{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 18px;cursor:pointer;border-bottom:3px solid transparent;
+  transition:all 0.15s;gap:3px;white-space:nowrap;flex-shrink:0;
+}
+.inst-btn:hover{background:rgba(0,212,255,0.04);}
+.inst-btn.active{border-bottom-color:var(--cyan);background:rgba(0,212,255,0.06);}
+.inst-icon{font-size:18px;line-height:1;}
+.inst-name{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);}
+.inst-btn.active .inst-name{color:var(--cyan);}
+.inst-ticker{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);}
+.inst-btn.active .inst-ticker{color:var(--bright);}
+
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo" id="main-logo">📈 ES · <b>SIGNAL</b> ENGINE <span style="font-size:11px;letter-spacing:2px;color:var(--muted)">v2</span></div>
+  <div class="top-status">
+    <div class="top-item"><div class="top-lbl">SIGNALS</div><div class="top-val c" id="h-sigs">0</div></div>
+    <div class="top-item"><div class="top-lbl">AVG CONF</div><div class="top-val" id="h-conf">–</div></div>
+    <div class="top-item"><div class="top-lbl">LAST DIR</div><div class="top-val" id="h-last">–</div></div>
+    <div>
+      <div id="clock-display">--:--:--</div>
+      <div id="sess-badge" class="sess-badge">LOADING</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INSTRUMENT SELECTOR ══ -->
+<div class="inst-bar" id="inst-bar">
+  <div class="inst-btn active" onclick="selectInstrument('ES')" id="inst-ES">
+    <div class="inst-icon">📈</div>
+    <div class="inst-name">E-MINI S&P</div>
+    <div class="inst-ticker">ES / MES</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('NQ')" id="inst-NQ">
+    <div class="inst-icon">💻</div>
+    <div class="inst-name">NASDAQ</div>
+    <div class="inst-ticker">NQ / MNQ</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('GC')" id="inst-GC">
+    <div class="inst-icon">🥇</div>
+    <div class="inst-name">GOLD</div>
+    <div class="inst-ticker">GC / MGC</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('CL')" id="inst-CL">
+    <div class="inst-icon">🛢️</div>
+    <div class="inst-name">CRUDE OIL</div>
+    <div class="inst-ticker">CL / QM</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('RTY')" id="inst-RTY">
+    <div class="inst-icon">📊</div>
+    <div class="inst-name">RUSSELL 2K</div>
+    <div class="inst-ticker">RTY / M2K</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('EUR')" id="inst-EUR">
+    <div class="inst-icon">💶</div>
+    <div class="inst-name">EUR/USD</div>
+    <div class="inst-ticker">6E / EURUSD</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('AAPL')" id="inst-AAPL">
+    <div class="inst-icon">🍎</div>
+    <div class="inst-name">APPLE</div>
+    <div class="inst-ticker">AAPL</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('TSLA')" id="inst-TSLA">
+    <div class="inst-icon">⚡</div>
+    <div class="inst-name">TESLA</div>
+    <div class="inst-ticker">TSLA</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('NVDA')" id="inst-NVDA">
+    <div class="inst-icon">🖥️</div>
+    <div class="inst-name">NVIDIA</div>
+    <div class="inst-ticker">NVDA</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('SPY')" id="inst-SPY">
+    <div class="inst-icon">🕵️</div>
+    <div class="inst-name">SPY ETF</div>
+    <div class="inst-ticker">SPY</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('QQQ')" id="inst-QQQ">
+    <div class="inst-icon">🔷</div>
+    <div class="inst-name">QQQ ETF</div>
+    <div class="inst-ticker">QQQ</div>
+  </div>
+  <div class="inst-btn" onclick="selectInstrument('BTC')" id="inst-BTC">
+    <div class="inst-icon">₿</div>
+    <div class="inst-name">BITCOIN</div>
+    <div class="inst-ticker">BTC/USD</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══ COL 1: INPUTS ══ -->
+  <div class="col-inputs">
+
+    <!-- SEC 1 - AUTO -->
+    <div class="input-section">
+      <div class="sec-header">
+        <div class="sec-num auto">1</div>
+        <div class="sec-title">PRICE & VWAP</div>
+        <div class="auto-badge">⚡ AI AUTO</div>
+      </div>
+      <div class="auto-field" id="af-price">
+        <div class="auto-field-label">ES CURRENT PRICE</div>
+        <div class="auto-field-val loading" id="av-price">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-price">○</div>
+      </div>
+      <div class="auto-field" id="af-vwap">
+        <div class="auto-field-label">VWAP / BANDS</div>
+        <div class="auto-field-val loading" id="av-vwap">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-vwap">○</div>
+      </div>
+      <div class="auto-field" id="af-vpos">
+        <div class="auto-field-label">PRICE vs VWAP</div>
+        <div class="auto-field-val loading" id="av-vpos">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-vpos">○</div>
+      </div>
+    </div>
+
+    <!-- SEC 2 - MANUAL -->
+    <div class="input-section">
+      <div class="sec-header">
+        <div class="sec-num manual">2</div>
+        <div class="sec-title">KEY S/R LEVELS</div>
+        <div class="manual-badge">✋ YOU INPUT</div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>PDH</label><input type="number" id="f-pdh" placeholder="5792.00" step="0.25"></div>
+        <div class="field"><label>PDL</label><input type="number" id="f-pdl" placeholder="5758.00" step="0.25"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>TODAY HOD</label><input type="number" id="f-hod" placeholder="5788.50" step="0.25"></div>
+        <div class="field"><label>TODAY LOD</label><input type="number" id="f-lod" placeholder="5764.00" step="0.25"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>SUPPORT</label><input type="number" id="f-sup" placeholder="5770.00" step="0.25"></div>
+        <div class="field"><label>RESISTANCE</label><input type="number" id="f-res" placeholder="5790.00" step="0.25"></div>
+      </div>
+      <div class="field"><label>RTH OPEN</label><input type="number" id="f-open" placeholder="5774.00" step="0.25"></div>
+    </div>
+
+    <!-- SEC 3 - AUTO -->
+    <div class="input-section">
+      <div class="sec-header">
+        <div class="sec-num auto">3</div>
+        <div class="sec-title">MARKET STRUCTURE</div>
+        <div class="auto-badge">⚡ AI AUTO</div>
+      </div>
+      <div class="auto-field" id="af-trend">
+        <div class="auto-field-label">TREND / STRUCTURE</div>
+        <div class="auto-field-val loading" id="av-trend">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-trend">○</div>
+      </div>
+      <div class="auto-field" id="af-phase">
+        <div class="auto-field-label">SESSION PHASE</div>
+        <div class="auto-field-val loading" id="av-phase">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-phase">○</div>
+      </div>
+      <div class="auto-field" id="af-vol">
+        <div class="auto-field-label">VOLUME CHARACTER</div>
+        <div class="auto-field-val loading" id="av-vol">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-vol">○</div>
+      </div>
+    </div>
+
+    <!-- SEC 4 - AUTO -->
+    <div class="input-section">
+      <div class="sec-header">
+        <div class="sec-num auto">4</div>
+        <div class="sec-title">ORDER FLOW / TAPE</div>
+        <div class="auto-badge">⚡ AI AUTO</div>
+      </div>
+      <div class="auto-field" id="af-dom">
+        <div class="auto-field-label">DOM / BID-ASK PRESSURE</div>
+        <div class="auto-field-val loading" id="av-dom">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-dom">○</div>
+      </div>
+      <div class="auto-field" id="af-delta">
+        <div class="auto-field-label">DELTA / FOOTPRINT</div>
+        <div class="auto-field-val loading" id="av-delta">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-delta">○</div>
+      </div>
+      <div class="auto-field" id="af-setup">
+        <div class="auto-field-label">DETECTED SETUP(S)</div>
+        <div class="auto-field-val loading" id="av-setup">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-setup">○</div>
+      </div>
+      <div class="auto-field" id="af-candle">
+        <div class="auto-field-label">CANDLE PATTERN</div>
+        <div class="auto-field-val loading" id="av-candle">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-candle">○</div>
+      </div>
+    </div>
+
+    <!-- SEC 5 - AUTO -->
+    <div class="input-section">
+      <div class="sec-header">
+        <div class="sec-num auto">5</div>
+        <div class="sec-title">MACRO / SENTIMENT</div>
+        <div class="auto-badge">⚡ AI AUTO</div>
+      </div>
+      <div class="auto-field" id="af-news">
+        <div class="auto-field-label">ECONOMIC EVENTS TODAY</div>
+        <div class="auto-field-val loading" id="av-news">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-news">○</div>
+      </div>
+      <div class="auto-field" id="af-sent">
+        <div class="auto-field-label">MARKET SENTIMENT</div>
+        <div class="auto-field-val loading" id="av-sent">Awaiting analysis...</div>
+        <div class="auto-icon" id="ai-sent">○</div>
+      </div>
+    </div>
+
+    <!-- SEC 6 - MANUAL (ONLY THIS) -->
+    <div class="input-section">
+      <div class="sec-header">
+        <div class="sec-num manual">6</div>
+        <div class="sec-title">YOUR STATE</div>
+        <div class="manual-badge">✋ YOU INPUT</div>
+      </div>
+      <div class="field">
+        <label>MENTAL CLARITY</label>
+        <div class="mood-slider">
+          <input type="range" id="f-mood" min="1" max="10" value="7" oninput="updateMood()">
+          <div class="mood-labels">
+            <span>Foggy</span>
+            <span id="mood-label" style="color:var(--bright)">7 — Focused</span>
+            <span>Peak</span>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>EMOTIONAL STATE</label>
+        <select id="f-emotion">
+          <option value="">– select –</option>
+          <option>Calm and neutral — best state</option>
+          <option>Confident (process-based)</option>
+          <option>Slightly anxious — manageable</option>
+          <option>Frustrated after losses</option>
+          <option>Overconfident after wins</option>
+          <option>FOMO — feeling left out</option>
+          <option>Revenge mindset — danger zone</option>
+          <option>Distracted / low energy</option>
+        </select>
+      </div>
+      <div class="field"><label>SESSION P&L SO FAR</label><input type="text" id="f-pnl" placeholder="e.g. +$300 or -$150"></div>
+      <div class="field"><label>ANYTHING ELSE (optional)</label><textarea id="f-extra" placeholder="Max loss remaining, felt early on last trades, etc..."></textarea></div>
+    </div>
+
+    <button class="analyze-btn" id="analyze-btn" onclick="runCompanionAnalysis()">🔍 ANALYZE MARKET</button>
+    <button class="gen-btn" id="gen-btn" onclick="generateSignal()" disabled>⚡ GENERATE SIGNAL</button>
+    <div style="height:10px;"></div>
+  </div>
+
+  <!-- ══ COL 2: SIGNAL ══ -->
+  <div class="col-signal" id="col-signal">
+    <div class="idle-wrap" id="idle-wrap">
+      <div style="font-size:56px;">📡</div>
+      <div class="big">SIGNAL ENGINE</div>
+      <div class="sub">Step 1 → Click ANALYZE MARKET<br>Step 2 → Fill Your S/R Levels + State<br>Step 3 → Click GENERATE SIGNAL</div>
+    </div>
+    <div class="hist-bar" id="hist-bar" style="display:none;">HISTORY: </div>
+  </div>
+
+  <!-- ══ COL 3: COMPANION ANALYSIS ══ -->
+  <div class="col-companion" id="col-companion">
+    <div class="companion-header">
+      <div class="companion-title">COMPANION ANALYSIS</div>
+      <div class="pulse-dot" id="pulse-dot" style="background:var(--dim);animation:none;"></div>
+    </div>
+    <div class="comp-idle" id="comp-idle">
+      <div class="comp-idle-icon">🤖</div>
+      <div class="comp-idle-text">COMPANION STANDING BY<br><br>Click ANALYZE MARKET<br>to start auto-analysis</div>
+    </div>
+    <div id="comp-content" style="display:none;flex-direction:column;flex:1;"></div>
+  </div>
+
+</div>
+
+<script>
+// ── CLOCK ──
+const moodMap=['','Panicking','Anxious','Nervous','Uneasy','Off','Neutral','Focused','Sharp','Zone','Peak'];
+function updateMood(){
+  const v=document.getElementById('f-mood').value;
+  document.getElementById('mood-label').textContent=v+' — '+moodMap[v];
+}
+updateMood();
+
+function tick(){
+  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const p=n=>String(n).padStart(2,'0');
+  document.getElementById('clock-display').textContent=`${p(et.getHours())}:${p(et.getMinutes())}:${p(et.getSeconds())} ET`;
+  const t=et.getHours()*60+et.getMinutes();
+  const b=document.getElementById('sess-badge');
+  if(t>=570&&t<960){b.textContent='● RTH OPEN';b.className='sess-badge';}
+  else if(t>=540&&t<570){b.textContent='◌ PRE-MKT';b.className='sess-badge';}
+  else{b.textContent='○ CLOSED';b.className='sess-badge off';}
+}
+setInterval(tick,1000);tick();
+
+// ── COMPANION ANALYSIS (Step 1) ──
+let analysisData = null;
+let signals = [];
+let confList = [];
+
+const ET_NOW = () => {
+  const et = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const h=et.getHours(), m=et.getMinutes();
+  const phase = h<9||(h===9&&m<30)?'Pre-market':
+    (h===9&&m>=30)||h===9&&m<=59?'Opening Drive (9:30-10am)':
+    h===10||(h===11&&m<30)?'Morning session (10am-11:30am)':
+    (h===11&&m>=30)||h===12||h===13?'Midday lull (11:30am-1pm)':
+    h>=14&&h<15?'Afternoon (1-3pm)':
+    h>=15&&h<16?'Power Hour (3-4pm)':'After hours';
+  return { h, m, phase, timeStr:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ET` };
+};
+
+const ANALYSIS_SYSTEM = `You are an elite ES futures market analyst and trading companion. You analyze the current ES/SPY market using your knowledge of market dynamics, typical RTH session behavior, and professional trading principles.
+
+Your role: Given the current time and session phase, analyze and provide structured market context data for an ES scalper. Be specific, realistic, and grounded. Where you don't have live data, reason from typical market structure patterns, session timing dynamics, and logical price behavior.
+
+Always respond ONLY with valid JSON matching this exact structure:
+{
+  "price": { "current": "e.g. ~5780 area (estimated)", "note": "brief context" },
+  "vwap": { "estimate": "VWAP likely near X based on session", "v1u": "est +1SD", "v1d": "est -1SD", "position": "Above/Below/At VWAP — reasoning" },
+  "structure": { "trend": "description", "character": "trending/ranging/transitioning", "note": "key structural observation" },
+  "phase": { "current": "session phase name", "characteristics": "what typically happens in this phase", "caution": "any phase-specific caution" },
+  "volume": { "assessment": "description", "implication": "what it means for trading" },
+  "orderflow": { "dom": "bid/ask pressure description", "delta": "delta observation", "tape": "tape reading" },
+  "setups": { "active": ["setup1","setup2"], "quality": "High/Moderate/Low", "note": "setup context" },
+  "candle": { "pattern": "likely pattern given session", "context": "what to look for" },
+  "macro": { "events": "today's key events or 'No major events'", "vix": "VIX condition estimate", "sentiment": "risk-on/risk-off/neutral", "note": "macro context" },
+  "companionSummary": { "bias": "BULLISH/BEARISH/NEUTRAL", "keyLevel": "most important level to watch", "alert": "one key thing the trader must know right now", "opportunity": "best potential setup in this environment" }
+}`;
+
+async function runCompanionAnalysis() {
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true; btn.textContent = '🔍 ANALYZING...';
+
+  // Pulse dot live
+  const dot = document.getElementById('pulse-dot');
+  dot.style.background = 'var(--cyan)';
+  dot.style.animation = 'pulse 1s infinite';
+
+  // Show companion loading
+  document.getElementById('comp-idle').style.display = 'none';
+  document.getElementById('comp-content').style.display = 'flex';
+  document.getElementById('comp-content').innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;">
+      <div class="scan-ring"></div>
+      <div class="scan-txt">COMPANION ANALYZING...</div>
+      <div class="scan-log">Scanning ES market conditions...<br>Reading session dynamics...<br>Evaluating order flow...<br>Checking macro calendar...</div>
+    </div>`;
+
+  const time = ET_NOW();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: ANALYSIS_SYSTEM,
+        messages:[{
+          role:'user',
+          content:`Analyze the ES futures market right now. Current ET time: ${time.timeStr}. Session phase: ${time.phase}. Today's date: ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}. 
+
+Provide a complete market analysis JSON for an ES scalper preparing to take a trade. Be realistic about what you can infer from session timing vs what needs live data. For price/VWAP, provide reasonable estimates based on recent ES market context and note they are estimates. For macro events, use your knowledge of today's economic calendar.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.map(b=>b.text||'').join('') || '';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    analysisData = JSON.parse(clean);
+    populateAutoFields(analysisData);
+    renderCompanionPanel(analysisData, time);
+    document.getElementById('gen-btn').disabled = false;
+  } catch(e) {
+    document.getElementById('comp-content').innerHTML = `<div style="padding:20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--red);">Analysis error: ${e.message}</div>`;
+  }
+
+  dot.style.background = 'var(--green)';
+  dot.style.animation = 'pulse 1.5s infinite';
+  btn.disabled = false; btn.textContent = '🔍 RE-ANALYZE MARKET';
+}
+
+function setAutoField(id, value, done=true) {
+  const el = document.getElementById('av-'+id);
+  const ic = document.getElementById('ai-'+id);
+  const box = document.getElementById('af-'+id);
+  if(el){ el.textContent = value; el.className = 'auto-field-val ready'; }
+  if(ic){ ic.textContent = done ? '✓' : '○'; ic.className = done ? 'auto-icon done' : 'auto-icon'; }
+  if(box && done) box.classList.add('filled');
+}
+
+function populateAutoFields(d) {
+  // Section 1
+  setAutoField('price', d.price?.current || '–');
+  setAutoField('vwap', `${d.vwap?.estimate || '–'} | +1SD: ${d.vwap?.v1u||'–'} | -1SD: ${d.vwap?.v1d||'–'}`);
+  setAutoField('vpos', d.vwap?.position || '–');
+  // Section 3
+  setAutoField('trend', d.structure?.trend || '–');
+  setAutoField('phase', `${d.phase?.current||'–'} — ${d.phase?.characteristics||''}`);
+  setAutoField('vol', `${d.volume?.assessment||'–'} · ${d.volume?.implication||''}`);
+  // Section 4
+  setAutoField('dom', d.orderflow?.dom || '–');
+  setAutoField('delta', d.orderflow?.delta || '–');
+  setAutoField('setup', (d.setups?.active||[]).join(', ') || '–');
+  setAutoField('candle', `${d.candle?.pattern||'–'} — ${d.candle?.context||''}`);
+  // Section 5
+  setAutoField('news', d.macro?.events || '–');
+  setAutoField('sent', `${d.macro?.sentiment||'–'} | VIX: ${d.macro?.vix||'–'}`);
+}
+
+function renderCompanionPanel(d, time) {
+  const bias = d.companionSummary?.bias || 'NEUTRAL';
+  const biasColor = bias==='BULLISH'?'var(--green)':bias==='BEARISH'?'var(--red)':'var(--amber)';
+
+  document.getElementById('comp-content').innerHTML = `
+    <!-- BIAS -->
+    <div class="comp-section">
+      <div class="comp-sec-title">SESSION BIAS</div>
+      <div style="text-align:center;padding:10px 0;">
+        <div style="font-family:'Archivo Black',sans-serif;font-size:32px;letter-spacing:4px;color:${biasColor};text-shadow:0 0 20px ${biasColor}40;">${bias}</div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:4px;">${time.phase}</div>
+      </div>
+    </div>
+
+    <!-- KEY ALERT -->
+    <div class="comp-section">
+      <div class="comp-sec-title">KEY ALERT</div>
+      <div class="comp-status warn">
+        <div class="cs-dot"></div>
+        <div class="cs-text">${d.companionSummary?.alert||'–'}</div>
+      </div>
+    </div>
+
+    <!-- BEST OPPORTUNITY -->
+    <div class="comp-section">
+      <div class="comp-sec-title">BEST OPPORTUNITY</div>
+      <div class="comp-data">
+        <div class="cd-label">SETUP</div>
+        <div class="cd-value">${d.companionSummary?.opportunity||'–'}</div>
+      </div>
+      <div class="comp-data">
+        <div class="cd-label">KEY LEVEL TO WATCH</div>
+        <div class="cd-value">${d.companionSummary?.keyLevel||'–'}</div>
+      </div>
+    </div>
+
+    <!-- SETUPS ACTIVE -->
+    <div class="comp-section">
+      <div class="comp-sec-title">ACTIVE SETUPS</div>
+      ${(d.setups?.active||[]).map(s=>`
+        <div class="comp-status ok">
+          <div class="cs-dot"></div>
+          <div class="cs-text">${s}</div>
+        </div>`).join('')}
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:6px;padding:0 2px;">Quality: <span style="color:${d.setups?.quality==='High'?'var(--green)':d.setups?.quality==='Moderate'?'var(--amber)':'var(--red)'}">${d.setups?.quality||'–'}</span> · ${d.setups?.note||''}</div>
+    </div>
+
+    <!-- MACRO -->
+    <div class="comp-section">
+      <div class="comp-sec-title">MACRO</div>
+      <div class="comp-data"><div class="cd-label">EVENTS</div><div class="cd-value ${d.macro?.events?.includes('No major')?'':'dim'}">${d.macro?.events||'–'}</div></div>
+      <div class="comp-data"><div class="cd-label">SENTIMENT</div><div class="cd-value">${d.macro?.sentiment||'–'} | VIX ${d.macro?.vix||'–'}</div></div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:4px;padding:0 2px;">${d.macro?.note||''}</div>
+    </div>
+
+    <!-- STRUCTURE NOTE -->
+    <div class="comp-section">
+      <div class="comp-sec-title">STRUCTURE NOTE</div>
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text);line-height:1.8;padding:2px;">${d.structure?.note||'–'}</div>
+      ${d.phase?.caution?`<div style="margin-top:8px;padding:8px;background:rgba(255,179,0,0.06);border:1px solid rgba(255,179,0,0.2);border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;color:var(--amber);">⚠ ${d.phase.caution}</div>`:''}
+    </div>
+  `;
+}
+
+// ── GENERATE SIGNAL (Step 2) ──
+const SIGNAL_SYSTEM = `You are an elite ES futures scalping signal engine. You receive complete market analysis from a companion AI plus manual inputs from the trader (key S/R levels and mental state). Generate a precise, actionable trading signal.
+
+Setups to consider: Opening Drive, VWAP Reclaim/Rejection, Break & Retest, Failed Auction, Liquidity Sweep, Order Block. Targets are flexible — AI decides based on structure.
+
+RULES:
+- Revenge/FOMO/overconfident state → NO-GO regardless
+- No clear confluence → NO-GO, never force
+- Stops behind structure (VWAP, S/R, swing point)
+- Targets at natural levels
+- Midday (11:30-1pm) → very selective
+
+Respond ONLY with valid JSON:
+{
+  "direction":"LONG"|"SHORT"|"NO-GO",
+  "setup":"setup name",
+  "confidence":0-100,
+  "entry":{"zone":"e.g. 5778-5780","idealEntry":5779.00,"logic":"why"},
+  "stop":{"price":5775.00,"points":4.00,"logic":"why this stop"},
+  "targets":[
+    {"label":"T1","price":5784.00,"points":5.0,"rr":"1.25R","action":"take 40-50% off"},
+    {"label":"T2","price":5789.00,"points":10.0,"rr":"2.5R","action":"take 30% off"},
+    {"label":"T3","price":5794.00,"points":15.0,"rr":"3.75R","action":"trail remainder"}
+  ],
+  "management":["step1","step2","step3","step4"],
+  "reasoning":"2-3 sentences explaining the signal with specific level references",
+  "invalidation":["condition1","condition2","condition3"],
+  "mindsetNote":"direct personal note to the trader about their state",
+  "noGoReason":"only if NO-GO"
+}`;
+
+async function generateSignal() {
+  if(!analysisData){ alert('Run ANALYZE MARKET first'); return; }
+  const btn = document.getElementById('gen-btn');
+  btn.disabled=true; btn.textContent='GENERATING...';
+
+  const manualCtx = {
+    pdh: document.getElementById('f-pdh').value||'not provided',
+    pdl: document.getElementById('f-pdl').value||'not provided',
+    hod: document.getElementById('f-hod').value||'not provided',
+    lod: document.getElementById('f-lod').value||'not provided',
+    sup: document.getElementById('f-sup').value||'not provided',
+    res: document.getElementById('f-res').value||'not provided',
+    open: document.getElementById('f-open').value||'not provided',
+    mood: document.getElementById('f-mood').value+' — '+moodMap[document.getElementById('f-mood').value],
+    emotion: document.getElementById('f-emotion').value||'not selected',
+    pnl: document.getElementById('f-pnl').value||'not provided',
+    extra: document.getElementById('f-extra').value||'none',
+  };
+
+  showSignalLoading();
+
+  const prompt = `COMPANION ANALYSIS (auto-generated):
+${JSON.stringify(analysisData, null, 2)}
+
+MANUAL INPUTS FROM TRADER:
+PDH: ${manualCtx.pdh} | PDL: ${manualCtx.pdl}
+HOD: ${manualCtx.hod} | LOD: ${manualCtx.lod}
+Support: ${manualCtx.sup} | Resistance: ${manualCtx.res}
+RTH Open: ${manualCtx.open}
+Mental clarity: ${manualCtx.mood}
+Emotional state: ${manualCtx.emotion}
+Session P&L: ${manualCtx.pnl}
+Notes: ${manualCtx.extra}
+
+Generate the trading signal JSON now.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:SIGNAL_SYSTEM,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.map(b=>b.text||'').join('') || '';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const sig = JSON.parse(clean);
+    renderSignal(sig);
+  } catch(e) {
+    document.getElementById('col-signal').innerHTML = `<div style="padding:24px;font-family:'Space Mono',monospace;font-size:10px;color:var(--red);">Signal error: ${e.message}</div><div class="hist-bar" id="hist-bar"></div>`;
+  }
+
+  btn.disabled=false; btn.textContent='⚡ GENERATE SIGNAL';
+}
+
+function showSignalLoading(){
+  document.getElementById('col-signal').innerHTML=`
+    <div class="scan-wrap">
+      <div class="scan-ring"></div>
+      <div class="scan-txt">COMPUTING SIGNAL</div>
+      <div class="scan-log">Synthesizing companion analysis...<br>Cross-referencing manual levels...<br>Evaluating trader state...<br>Computing entry, stop & targets...<br>Building trade plan...</div>
+    </div>`;
+}
+
+function renderSignal(s){
+  const dir=s.direction;
+  const isL=dir==='LONG', isS=dir==='SHORT', isN=dir==='NO-GO';
+  const bc=isL?'long':isS?'short':'nogo';
+  const conf=s.confidence||0;
+  const cc=conf>=70?'hi':conf>=50?'md':'lo';
+  const circ=2*Math.PI*34;
+  const offset=circ-(conf/100)*circ;
+  const ts=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  signals.unshift({dir,setup:s.setup,conf,ts,sig:s});
+  confList.push(conf);
+  document.getElementById('h-sigs').textContent=signals.length;
+  const avgC=Math.round(confList.reduce((a,b)=>a+b,0)/confList.length);
+  const hc=document.getElementById('h-conf');
+  hc.textContent=avgC+'%';
+  hc.className='top-val '+(avgC>=70?'g':avgC>=50?'':'r');
+  const hl=document.getElementById('h-last');
+  hl.textContent=dir; hl.className='top-val '+(isL?'g':isS?'r':'');
+
+  const levelsHTML = !isN ? `
+  <div class="levels-row">
+    <div class="lc entry"><div class="lc-l">ENTRY ZONE</div><div class="lc-v" style="font-size:12px">${s.entry?.zone||'–'}</div><div class="lc-s" style="color:var(--dim);font-size:9px">${s.entry?.logic||''}</div></div>
+    <div class="lc sl"><div class="lc-l">STOP LOSS</div><div class="lc-v">${s.stop?.price||'–'}</div><div class="lc-s" style="color:var(--red)">${s.stop?.points||'?'}pts</div></div>
+    ${(s.targets||[]).map(t=>`<div class="lc ${t.label.toLowerCase()}"><div class="lc-l">${t.label}</div><div class="lc-v">${t.price}</div><div class="lc-s" style="color:var(--green)">${t.rr} · ${t.points}pts</div><div class="lc-s" style="color:var(--dim);font-size:8px">${t.action||''}</div></div>`).join('')}
+  </div>` : '';
+
+  const nogoHTML = isN ? `<div class="inval" style="border-color:rgba(255,179,0,0.4);background:rgba(255,179,0,0.05);">
+    <div class="ibox-title" style="color:var(--amber);">⛔ NO TRADE — REASON</div>
+    <div style="font-size:13px;color:var(--text);line-height:1.7">${s.noGoReason||'No clear setup present.'}</div>
+  </div>` : '';
+
+  const mindClass = (s.mindsetNote||'').toLowerCase().includes('danger')||(s.mindsetNote||'').toLowerCase().includes('stop')||(s.mindsetNote||'').toLowerCase().includes('revenge') ? 'danger' :
+    (s.mindsetNote||'').toLowerCase().includes('good')||(s.mindsetNote||'').toLowerCase().includes('calm')||(s.mindsetNote||'').toLowerCase().includes('well') ? 'good' : 'warn';
+
+  document.getElementById('col-signal').innerHTML = `
+  <div class="signal-body">
+
+    <!-- BANNER -->
+    <div class="sig-banner ${bc}">
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--dim);margin-bottom:4px;">● SIGNAL · ${ts}</div>
+        <div class="sig-dir">${dir}</div>
+        <div class="sig-setup">${s.setup||''}</div>
+      </div>
+      <div class="conf-gauge">
+        <div class="ring-wrap" style="position:relative;width:80px;height:80px;">
+          <svg class="gauge-ring" width="80" height="80" viewBox="0 0 80 80">
+            <circle class="g-track" cx="40" cy="40" r="34"/>
+            <circle class="g-fill ${cc}" cx="40" cy="40" r="34" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="gauge-inner">
+            <div class="gauge-pct" style="color:${conf>=70?'var(--green)':conf>=50?'var(--amber)':'var(--red)'}">${conf}%</div>
+            <div class="gauge-lbl">CONF</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${nogoHTML}
+    ${levelsHTML}
+
+    <!-- REASONING + MINDSET -->
+    <div class="info-2">
+      <div class="reason-box">
+        <div class="ibox-title">AI REASONING</div>
+        <div class="reason-text">${s.reasoning||'–'}</div>
+      </div>
+      <div class="mind-alert ${mindClass}">
+        <div class="mind-alert-title">MINDSET CHECK</div>
+        <div class="mind-alert-text">${s.mindsetNote||'–'}</div>
+      </div>
+    </div>
+
+    ${!isN?`
+    <!-- METRICS + MANAGEMENT -->
+    <div class="info-2">
+      <div class="ibox">
+        <div class="ibox-title">TRADE METRICS</div>
+        <div class="irow"><span class="ik">IDEAL ENTRY</span><span class="iv c">${s.entry?.idealEntry||'–'}</span></div>
+        <div class="irow"><span class="ik">STOP</span><span class="iv r">${s.stop?.price||'–'} (${s.stop?.points||'?'}pts)</span></div>
+        ${(s.targets||[]).map(t=>`<div class="irow"><span class="ik">${t.label}</span><span class="iv g">${t.price} (${t.rr})</span></div>`).join('')}
+        <div class="irow"><span class="ik">SETUP</span><span class="iv">${s.setup||'–'}</span></div>
+      </div>
+      <div class="ibox">
+        <div class="ibox-title">MANAGEMENT STEPS</div>
+        <div class="steps">
+          ${(s.management||[]).map((st,i)=>`<div class="step"><div class="sn">${i+1}</div><div class="st">${st}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- INVALIDATION -->
+    <div class="inval">
+      <div class="ibox-title">EXIT / INVALIDATION CONDITIONS</div>
+      <ul>${(s.invalidation||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
+    </div>`:''}
+
+  </div>
+
+  <!-- HISTORY BAR -->
+  <div class="hist-bar" id="hist-bar">
+    <span>HISTORY:</span>
+    ${signals.map((sg,i)=>`<span class="hc ${sg.dir[0]}" onclick="replaySig(${i})">${sg.ts} ${sg.dir} ${sg.conf}%</span>`).join('')}
+  </div>`;
+}
+
+function replaySig(i){ renderSignal(signals[i].sig); }
+
+// ══════════════════════════════
+// INSTRUMENT SELECTOR
+// ══════════════════════════════
+const INSTRUMENTS = {
+  ES:   { name:'E-Mini S&P 500', ticker:'ES1!', icon:'📈', contract:'$50/pt · $12.50/tick · 0.25pt min', session:'RTH 9:30am–4pm ET', type:'futures', specs:'Margin ~$12,500. Scalp targets 2-8pts. Stop 2-5pts.', setupsPrompt:'Opening Drive, VWAP Reclaim/Rejection, Break & Retest, Failed Auction, Liquidity Sweep, Order Block' },
+  NQ:   { name:'E-Mini Nasdaq 100', ticker:'NQ1!', icon:'💻', contract:'$20/pt · $5/tick · 0.25pt min', session:'RTH 9:30am–4pm ET', type:'futures', specs:'Margin ~$17,000. Scalp targets 5-20pts. Stop 5-15pts. More volatile than ES.', setupsPrompt:'Opening Drive, VWAP Reclaim/Rejection, Tech sector momentum, Gap fills, HOD/LOD breaks, Order Block' },
+  GC:   { name:'Gold Futures', ticker:'GC1!', icon:'🥇', contract:'$100/pt · $10/tick · 0.10pt min', session:'Nearly 24h, active 8:20am–1:30pm ET', type:'futures', specs:'Margin ~$9,000. Scalp targets $2-8/oz. Stop $2-5/oz. Watch USD & yields.', setupsPrompt:'Support/Resistance, VWAP Reclaim, Trend continuation, Safe haven flows, USD inverse correlation, Break & Retest' },
+  CL:   { name:'Crude Oil Futures', ticker:'CL1!', icon:'🛢️', contract:'$1000/pt · $10/tick · 0.01pt min', session:'Nearly 24h, active 9am–2:30pm ET', type:'futures', specs:'Margin ~$5,500. Scalp targets $0.20-$1.00. Very volatile — tight stops. Watch EIA reports.', setupsPrompt:'Support/Resistance, VWAP Reclaim, EIA report reaction, Trend continuation, Liquidity sweep, Range breakout' },
+  RTY:  { name:'Russell 2000', ticker:'RTY1!', icon:'📊', contract:'$50/pt · $5/tick · 0.10pt min', session:'RTH 9:30am–4pm ET', type:'futures', specs:'Margin ~$7,500. Small cap risk-on indicator. Scalp targets 2-8pts. Good for trending days.', setupsPrompt:'Opening Drive, VWAP Reclaim, Risk-on momentum, Break & Retest, HOD/LOD break, Correlation with ES/NQ' },
+  EUR:  { name:'EUR/USD Futures', ticker:'6E1!', icon:'💶', contract:'$125,000 notional · $12.50/tick · 0.0001 min', session:'24h, active London 3am-12pm ET & NY 8am-5pm ET', type:'futures', specs:'Scalp 5-15 pips. Watch ECB/Fed news. Correlates with risk appetite.', setupsPrompt:'London breakout, NY open momentum, Support/Resistance, VWAP Reclaim, News reaction, Round number magnets' },
+  AAPL: { name:'Apple Inc', ticker:'AAPL', icon:'🍎', contract:'100 shares/contract · No multiplier', session:'RTH 9:30am–4pm ET + Pre/AH', type:'stock', specs:'High liquidity. Watch VWAP, AVWAP. Scalp 0.25-$1.50. Earnings reaction stock.', setupsPrompt:'VWAP Reclaim, Opening Range Breakout, HOD/LOD break, Gap fill, Earnings momentum, Sector rotation' },
+  TSLA: { name:'Tesla Inc', ticker:'TSLA', icon:'⚡', contract:'100 shares/contract · No multiplier', session:'RTH 9:30am–4pm ET + Pre/AH', type:'stock', specs:'High volatility, wide spreads. Scalp $0.50-$3.00. Moves fast — tight stops. Elon tweet risk.', setupsPrompt:'VWAP Reclaim, Momentum continuation, Failed breakout, Gap fill, Opening Drive, Liquidity sweep' },
+  NVDA: { name:'NVIDIA Corp', ticker:'NVDA', icon:'🖥️', contract:'100 shares/contract · No multiplier', session:'RTH 9:30am–4pm ET + Pre/AH', type:'stock', specs:'AI momentum stock. High ATR. Scalp $0.50-$3.00. Leads tech/NQ moves.', setupsPrompt:'VWAP Reclaim, AI sector momentum, Opening Drive, Break & Retest, HOD/LOD break, Institutional order flow' },
+  SPY:  { name:'SPDR S&P 500 ETF', ticker:'SPY', icon:'🕵️', contract:'100 shares/contract · No multiplier', session:'RTH 9:30am–4pm ET + Pre/AH', type:'stock', specs:'Most liquid ETF. Mirrors ES. Scalp $0.20-$1.50. Great for beginners.', setupsPrompt:'VWAP Reclaim/Rejection, Opening Drive, Break & Retest, HOD/LOD break, Gap fill, Failed Auction' },
+  QQQ:  { name:'Invesco QQQ ETF', ticker:'QQQ', icon:'🔷', contract:'100 shares/contract · No multiplier', session:'RTH 9:30am–4pm ET + Pre/AH', type:'stock', specs:'Mirrors NQ. Tech heavy. Scalp $0.25-$2.00. Leads on tech moves.', setupsPrompt:'VWAP Reclaim, Tech momentum, Opening Drive, Gap fill, NQ correlation play, HOD/LOD break' },
+  BTC:  { name:'Bitcoin', ticker:'BTCUSD', icon:'₿', contract:'1 BTC · Crypto — 24/7', session:'24/7 — most active 9am-5pm ET', type:'crypto', specs:'Extreme volatility. Scalp $100-$500. Wide stops needed. Watch $100 round numbers. Leverage dangerous.', setupsPrompt:'VWAP Reclaim, Support/Resistance, Liquidity sweep, Round number magnet, Order block, Break & Retest' },
+};
+
+let currentInstrument = 'ES';
+
+function selectInstrument(code) {
+  currentInstrument = code;
+  // Update active button
+  document.querySelectorAll('.inst-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('inst-'+code)?.classList.add('active');
+
+  const inst = INSTRUMENTS[code];
+
+  // Update page title
+  const logo = document.getElementById('main-logo');
+  if(logo) logo.innerHTML = inst.icon + ' ' + code + ' &middot; <b>SIGNAL</b> ENGINE <span style="font-size:11px;letter-spacing:2px;color:var(--muted)">v2</span>';
+
+  // Update session badge context
+  const badge = document.getElementById('session-badge');
+  if(badge) badge.title = inst.session;
+
+  // Update placeholder/context in analysis section
+  const ctx = document.getElementById('comp-content');
+  if(ctx && ctx.style.display !== 'none') {
+    // Show instrument info card at top of companion
+    const existing = document.getElementById('inst-info-card');
+    if(existing) existing.remove();
+    const card = document.createElement('div');
+    card.id = 'inst-info-card';
+    card.style.cssText = 'padding:11px 14px;border-bottom:1px solid var(--b1);';
+    card.innerHTML = `
+      <div style="font-family:'Space Mono',monospace;font-size:7px;letter-spacing:3px;color:var(--amber);margin-bottom:9px;display:flex;align-items:center;gap:6px;">INSTRUMENT<span style="flex:1;height:1px;background:var(--b1);display:block;"></span></div>
+      <div style="background:var(--bg3);border:1px solid var(--b2);border-radius:3px;padding:9px 11px;">
+        <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:3px;">SELECTED</div>
+        <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--cyan);">${inst.icon} ${inst.name}</div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;">${inst.specs}</div>
+        <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);margin-top:4px;">Session: ${inst.session}</div>
+      </div>`;
+    ctx.prepend(card);
+  }
+
+  // Show instrument info in idle state
+  const idle = document.getElementById('comp-idle');
+  if(idle) {
+    idle.innerHTML = `
+      <div class="comp-idle-icon">${inst.icon}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:13px;letter-spacing:3px;color:var(--cyan);opacity:1">${inst.name}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);text-align:center;line-height:1.8;opacity:1;padding:0 10px">${inst.contract}<br>${inst.session}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);text-align:center;line-height:1.8;padding:0 10px">${inst.specs}</div>
+      <div style="margin-top:8px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);text-align:center;">Click ANALYZE MARKET to start</div>`;
+  }
+
+  // Reset analysis data when switching instruments
+  analysisData = null;
+  document.getElementById('gen-btn').disabled = true;
+
+  // Reset auto fields
+  ['price','vwap','trend','phase','vol','dom','delta','setup','candle','news','sent'].forEach(id => {
+    const av = document.getElementById('av-'+id);
+    const ai = document.getElementById('ai-'+id);
+    const af = document.getElementById('af-'+id);
+    if(av){ av.textContent='Awaiting analysis...'; av.className='auto-field-val loading'; }
+    if(ai){ ai.textContent='○'; ai.className='auto-icon'; }
+    if(af){ af.classList.remove('filled'); }
+  });
+
+  // Clear signal output
+  document.getElementById('col-signal')?.querySelector('.signal-body') && location.reload();
+}
+
+// Override runCompanionAnalysis to use selected instrument
+const _origRunAnalysis = runCompanionAnalysis;
+
+// Patch analysis to be instrument-aware
+const origRunCompanionAnalysis = runCompanionAnalysis;
+window.runCompanionAnalysis = async function() {
+  const inst = INSTRUMENTS[currentInstrument];
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true; btn.textContent = '🔍 ANALYZING ' + currentInstrument + '...';
+  document.getElementById('live-dot') && (document.getElementById('live-dot').className = 'pulse');
+
+  showCompanionLoading();
+
+  const time = ET_NOW();
+
+  const INST_ANALYSIS_SYS = `You are an elite ${inst.name} trader and market analyst with 20 years experience. Analyze the current ${inst.name} (${inst.ticker}) market.
+
+Your role: Given the current time and market context, provide structured analysis for a ${inst.type} scalper trading ${inst.name}. Contract specs: ${inst.contract}. ${inst.specs}
+
+Key setups for this instrument: ${inst.setupsPrompt}
+
+Respond ONLY with valid JSON matching this structure:
+{
+  "price": { "current": "price estimate", "note": "context" },
+  "vwap": { "estimate": "VWAP estimate", "v1u": "+1SD", "v1d": "-1SD", "position": "above/below/at with reasoning" },
+  "structure": { "trend": "description", "character": "trending/ranging/transitioning", "note": "key observation" },
+  "phase": { "current": "session phase", "characteristics": "what happens now", "caution": "any caution" },
+  "volume": { "assessment": "volume description", "implication": "what it means" },
+  "orderflow": { "dom": "pressure description", "delta": "delta observation", "tape": "tape reading" },
+  "setups": { "active": ["setup1","setup2"], "quality": "High/Moderate/Low", "note": "setup context" },
+  "candle": { "pattern": "pattern", "context": "what to look for" },
+  "macro": { "events": "relevant events or None", "vix": "VIX context", "sentiment": "risk-on/off/neutral", "note": "macro context relevant to ${currentInstrument}" },
+  "companionSummary": { "bias": "BULLISH/BEARISH/NEUTRAL", "keyLevel": "most important level", "alert": "key thing trader must know", "opportunity": "best potential setup" }
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: INST_ANALYSIS_SYS,
+        messages: [{ role: 'user', content: `Analyze the ${inst.name} (${inst.ticker}) market right now. Current ET time: ${time.timeStr}. Session phase: ${time.phase}. Date: ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}. Provide complete market analysis for a scalper. Be specific about price levels and trading conditions for ${inst.name}.` }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.map(b=>b.text||'').join('') || '';
+    const clean = raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    analysisData = JSON.parse(clean);
+    populateAutoFields(analysisData);
+    renderCompanionPanel(analysisData, time);
+    document.getElementById('gen-btn').disabled = false;
+  } catch(e) {
+    document.getElementById('comp-content').innerHTML = `<div style="padding:20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--red);">Analysis error: ${e.message}</div>`;
+  }
+
+  document.getElementById('live-dot') && (document.getElementById('live-dot').className = 'pulse live');
+  btn.disabled = false; btn.textContent = '🔍 RE-ANALYZE ' + currentInstrument;
+};
+
+// Also patch signal generation to be instrument-aware
+const origGenerateSignal = generateSignal;
+window.generateSignal = async function() {
+  if(!analysisData){ alert('Run ANALYZE MARKET first'); return; }
+  const inst = INSTRUMENTS[currentInstrument];
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true; btn.textContent = 'COMPUTING...';
+
+  showSignalLoading();
+
+  const INST_SIGNAL_SYS = `You are the world's best ${inst.name} scalping signal engine. You trade ${inst.ticker} professionally.
+
+Contract specs: ${inst.contract}
+Trading session: ${inst.session}
+Key specs: ${inst.specs}
+Preferred setups: ${inst.setupsPrompt}
+
+You receive complete market analysis plus trader inputs. Generate a precise, actionable scalping signal.
+
+RULES:
+- Revenge/FOMO/overconfident/danger → NO-GO regardless
+- No genuine confluence → NO-GO, never force a trade
+- Stops behind real structure always
+- Targets at natural price magnets
+- Account for instrument-specific characteristics (volatility, spread, session timing)
+
+Respond ONLY with valid JSON:
+{
+  "direction": "LONG" | "SHORT" | "NO-GO",
+  "setup": "setup name",
+  "confidence": 0-100,
+  "entry": {"zone": "price range", "idealEntry": 0.00, "entryLogic": "why"},
+  "stop": {"price": 0.00, "points": 0.00, "logic": "structural reason"},
+  "targets": [
+    {"label":"T1","price":0.00,"points":0.00,"rr":"xR","action":"scale action"},
+    {"label":"T2","price":0.00,"points":0.00,"rr":"xR","action":"scale action"},
+    {"label":"T3","price":0.00,"points":0.00,"rr":"xR","action":"trail action"}
+  ],
+  "tradeManagement": ["step1","step2","step3","step4"],
+  "reasoning": "3-4 sentences referencing specific levels, indicators, instrument characteristics",
+  "invalidation": ["condition1","condition2","condition3"],
+  "mindsetNote": "direct personal note to trader about their state",
+  "noGoReason": "only if NO-GO"
+}`;
+
+  const manualCtx = {
+    pdh: document.getElementById('f-pdh').value||'not provided',
+    pdl: document.getElementById('f-pdl').value||'not provided',
+    hod: document.getElementById('f-hod').value||'not provided',
+    lod: document.getElementById('f-lod').value||'not provided',
+    sup: document.getElementById('f-sup').value||'not provided',
+    res: document.getElementById('f-res').value||'not provided',
+    open: document.getElementById('f-open').value||'not provided',
+    mood: document.getElementById('f-mood').value+' — '+moodMap[document.getElementById('f-mood').value],
+    emotion: document.getElementById('f-emotion').value||'not selected',
+    pnl: document.getElementById('f-pnl').value||'not provided',
+    extra: document.getElementById('f-extra').value||'none',
+  };
+
+  const prompt = `INSTRUMENT: ${inst.name} (${inst.ticker}) — ${inst.contract}
+
+COMPANION ANALYSIS (auto-generated for ${inst.name}):
+${JSON.stringify(analysisData, null, 2)}
+
+MANUAL INPUTS FROM TRADER:
+Prev High: ${manualCtx.pdh} | Prev Low: ${manualCtx.pdl}
+Today High: ${manualCtx.hod} | Today Low: ${manualCtx.lod}
+Support: ${manualCtx.sup} | Resistance: ${manualCtx.res}
+Session Open: ${manualCtx.open}
+Mental clarity: ${manualCtx.mood}
+Emotional state: ${manualCtx.emotion}
+Session P&L: ${manualCtx.pnl}
+Notes: ${manualCtx.extra}
+
+Generate the trading signal JSON for ${inst.name}.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: INST_SIGNAL_SYS,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.map(b=>b.text||'').join('') || '';
+    const clean = raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    let signal;
+    try { signal = JSON.parse(clean); } catch(e) { signal = { error: raw }; }
+    renderSignal(signal);
+  } catch(e) {
+    renderError(e.message);
+  }
+
+  btn.disabled = false; btn.textContent = '⚡ GENERATE SIGNAL';
+};
+
+// Initialize with ES selected
+selectInstrument('ES');
+
+</script>
+</body>
+</html>
